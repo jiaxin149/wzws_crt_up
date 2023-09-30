@@ -1,0 +1,8 @@
+{
+    "//提示": "下方T、Q的值请填写360登录的cookie里对应的T、Q值,剩下的phpsessid和phptime请忽略,这两个由程序自动生成读写",
+    "Domain": "jaxing.cc",
+    "Q": "u%3D360H448807115%26n%3Dd1491112574%26le%3DZGD5ZGRkZwH3APH0ZUSkYzAioD%3D%3D%26m%3D%26qid%3D448807115%26im%3D1_t0105d6cf9b508f72c8%26src%3Dpcw_open_api_02f55d8f4dd80ac05e0a16617df49e26%26t%3D1",
+    "T": "s%3D8bda09cda455eb6e2bde2c8bdaf43d94%26t%3D1696083981%26lm%3D%26lf%3D1%26sk%3Dce5fe44d9f1d77569de71ca076a8087e%26mt%3D1696083981%26rc%3D%26v%3D2.0%26a%3D1",
+    "phpsessid": "1e7620e5a4cead87ebaaa9ce9ce70c92",
+    "phptime": 1696098884
+}

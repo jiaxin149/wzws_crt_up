@@ -315,7 +315,11 @@ func login360() {
 			}
 		}
 		write_conf()
-	} else {
+	} else if strings.Contains(html, "您正在访问的应用暂时无法正常提供服务") {
+		fmt.Println("360Cooke可能已经失效，请更新cookie再次尝试")
+	}else if strings.Contains(html, "什么都没有发现啊") {
+		fmt.Println("360或奇安信响应过忙，等下重试看看")
+	}else {
 		fmt.Println("网站卫士登录失败")
 		phpsessid = ""
 	}
