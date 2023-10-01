@@ -75,6 +75,16 @@ type Get_visitbase_data_json struct {
 		} `json:"visitfrom"`
 	} `json:"res"`
 }
+type Get_safebase_data struct {
+	Status string `json:"status"`
+	Res struct {
+		Visit int `json:"visit"`
+		Webcount int `json:"webcount"`
+		Cccount interface{} `json:"cccount"`
+		Totalcount int `json:"totalcount"`
+		Days int `json:"days"`
+	} `json:"res"`
+}
 func main() {
 	fmt.Println("当前时间戳：", time_new())
 	read_conf() //读取配置文件
@@ -90,6 +100,7 @@ func main() {
 			fmt.Println("本次操作的子域名是：", item)
 			time.Sleep(1 * time.Second)
 			get_visitbase_data(Domain,item)
+			get_safebase_data(Domain,item)
 		}
 	} else if phptime < int(time_new()) {
 		fmt.Println("phpsessid过期")
@@ -101,6 +112,7 @@ func main() {
 			fmt.Println("上传的证书域名是：", item)
 			time.Sleep(1 * time.Second)
 			get_visitbase_data(Domain,item)
+			get_safebase_data(Domain,item)
 		}
 	} else if phpsessid != "" && phptime > int(time_new()) {
 		fmt.Println("时间戳未过期，直接登录")
@@ -111,6 +123,7 @@ func main() {
 			fmt.Println("上传的证书域名是：", item)
 			time.Sleep(1 * time.Second)
 			get_visitbase_data(Domain,item)
+			get_safebase_data(Domain,item)
 		}
 		write_conf()
 	} else {
@@ -200,47 +213,53 @@ func get_visitbase_data(domain string, host string){
 	
 
 
-// // 获取网站安全报表
-// func get_safebase_data(domain, host){
-// 	if_phpsessid()
-// 	post := http.Client{}
-//     url = "https://wangzhan.qianxin.com/report/get_safebase_data"
-//     data = "domain=" + domain + "&host=" + host
-// 	http, _ := http.NewRequest("POST", url, strings.NewReader(data))
-// 	http.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
-// 	http.Header.Set("Cookie", "PHPSESSID="+phpsessid)
-// 	res, err := post.Do(http)
-// 	if err != nil {
-// 		fmt.Println("http错误:", err)
-// 		return
-// 	}
-// 	defer res.Body.Close()
-// 	body, _ := (io.ReadAll(res.Body))
-// 	html := string(body)
+// 获取网站安全报表
+func get_safebase_data(domain string, host string){
+	if_phpsessid()
+	post := http.Client{}
+    url := "https://wangzhan.qianxin.com/report/get_safebase_data"
+    data := "domain=" + domain + "&host=" + host
+	http, _ := http.NewRequest("POST", url, strings.NewReader(data))
+	http.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+	http.Header.Set("Cookie", "PHPSESSID="+phpsessid)
+	res, err := post.Do(http)
+	if err != nil {
+		fmt.Println("http错误:", err)
+		return
+	}
+	defer res.Body.Close()
+	body, _ := (io.ReadAll(res.Body))
+	var json_str Get_safebase_data
+	if err := json.Unmarshal(body, &json_str); err != nil {
+		fmt.Println(err)
+	}
+	if json_str.Status != "ok" {
+		fmt.Println("奇安信返回验证数据错误返回错误json，请检查参数")
+		fmt.Println("奇安信返回的JSON ：", string(body))
+		return
+	}
 
-//     json_data = requests.post(url, data=data, headers=headers)
-//     json_str = json.loads(json_data.text)
-//     visit = json_str["res"]["visit"]  //正常访问数
-//     webcount = json_str["res"]["webcount"]  //web攻击数
-//     cccount = json_str["res"]["cccount"]  //cc攻击数
-//     days = json_str["res"]["days"]  //已防护天数
-//     totalcount = json_str["res"]["totalcount"]  //恶意攻击数
+    visit := json_str.Res.Visit  //正常访问数
+    webcount := json_str.Res.Webcount  //web攻击数
+    cccount := json_str.Res.Cccount  //cc攻击数
+    days := json_str.Res.Days  //已防护天数
+    totalcount := json_str.Res.Totalcount  //恶意攻击数
 
-//     print(
-//         "\n网站安全报告: ",
-//         host + "." + domain,
-//         "\n已防护天数",
-//         days,
-//         "\n正常访问数",
-//         visit,
-//         "\nweb攻击数",
-//         webcount,
-//         "\ncc攻击数",
-//         cccount,
-//         "\n恶意攻击数",
-//         totalcount,
-//     )
-// }
+    fmt.Println(
+        "\n网站安全报告: ",
+        host + "." + domain,
+        "\n已防护天数",
+        days,
+        "\n正常访问数",
+        visit,
+        "\nweb攻击数",
+        webcount,
+        "\ncc攻击数",
+        cccount,
+        "\n恶意攻击数",
+        totalcount,
+    )
+}
     
 
 
