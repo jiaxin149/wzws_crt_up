@@ -40,7 +40,41 @@ type Domain_And_Host_list struct {
 		} `json:"list"`
 	} `json:"res"`
 }
-
+type Get_visitbase_data_json struct {
+	Status string `json:"status"`
+	Res struct {
+		Basedata struct {
+			Pv float64 `json:"pv"`
+			IP float64 `json:"ip"`
+			Uv float64 `json:"uv"`
+			Visit float64 `json:"visit"`
+			Cachehit float64 `json:"cachehit"`
+			Cacheband float64 `json:"cacheband"`
+			Totalband float64 `json:"totalband"`
+			Takehours float64 `json:"takehours"`
+			Savehours float64 `json:"savehours"`
+			Searchbot []float64 `json:"searchbot"`
+			Searchfrom []float64 `json:"searchfrom"`
+			Err403 float64 `json:"err403"`
+			Err404 float64 `json:"err404"`
+			Err500 float64 `json:"err500"`
+			Err502 float64 `json:"err502"`
+			MaxBand string `json:"maxBand"`
+			ResourceVisit float64 `json:"resource_visit"`
+			ToBackFlow float64 `json:"to_back_flow"`
+			Err403P string `json:"err403p"`
+			Err404P string `json:"err404p"`
+			Err500P string `json:"err500p"`
+			Err502P string `json:"err502p"`
+		} `json:"basedata"`
+		Visitfrom struct {
+			VisitCount float64 `json:"visit_count"`
+			PvCount float64 `json:"pv_count"`
+			UvCount float64 `json:"uv_count"`
+			IPCount float64 `json:"ip_count"`
+		} `json:"visitfrom"`
+	} `json:"res"`
+}
 func main() {
 	fmt.Println("当前时间戳：", time_new())
 	read_conf() //读取配置文件
@@ -55,8 +89,8 @@ func main() {
 			up_crt(item, Domain)
 			fmt.Println("本次操作的子域名是：", item)
 			time.Sleep(1 * time.Second)
+			get_visitbase_data(Domain,item)
 		}
-		//up_crt("www", "jaxing.cc")
 	} else if phptime < int(time_new()) {
 		fmt.Println("phpsessid过期")
 		login360() //使用360cookie登录
@@ -66,9 +100,8 @@ func main() {
 			up_crt(item, Domain)
 			fmt.Println("上传的证书域名是：", item)
 			time.Sleep(1 * time.Second)
+			get_visitbase_data(Domain,item)
 		}
-		//getHostList("jaxing.cc") //获取子域列表
-		//up_crt("www", "jaxing.cc")
 	} else if phpsessid != "" && phptime > int(time_new()) {
 		fmt.Println("时间戳未过期，直接登录")
 		getHostList(Domain)
@@ -77,6 +110,7 @@ func main() {
 			up_crt(item, Domain)
 			fmt.Println("上传的证书域名是：", item)
 			time.Sleep(1 * time.Second)
+			get_visitbase_data(Domain,item)
 		}
 		write_conf()
 	} else {
@@ -84,6 +118,131 @@ func main() {
 	}
 	time.Sleep(2 * time.Second)
 }
+//流量转换方法
+func convertBytes(size float64) string {
+	var unit string
+	if size < 1024 {
+		unit = "B"
+	} else if size < 1024*1024 {
+		size /= 1024
+		unit = "KB"
+	} else if size < 1024*1024*1024 {
+		size /= 1024*1024
+		unit = "MB"
+	} else if size < 1024*1024*1024*1024 {
+		size /= 1024*1024*1024
+		unit = "GB"
+	} else {
+		size /= 1024*1024*1024*1024
+		unit = "TB"
+	}
+	return fmt.Sprintf("%.2f%s", size, unit)
+}
+
+//获取流量报表
+func get_visitbase_data(domain string, host string){
+	if_phpsessid()
+	post := http.Client{}	
+    url := "https://wangzhan.qianxin.com/report/get_visitbase_data"
+    data := "domain=" + domain + "&host=" + host
+	http, _ := http.NewRequest("POST", url, strings.NewReader(data))
+	http.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+	http.Header.Set("Cookie", "PHPSESSID="+phpsessid)
+	res, err := post.Do(http)
+	if err != nil {
+		fmt.Println("http错误:", err)
+		return
+	}
+	// 读取响应内容
+	defer res.Body.Close()
+	body, _ := (io.ReadAll(res.Body))
+	var json_str Get_visitbase_data_json
+	if err := json.Unmarshal(body, &json_str); err != nil {
+		fmt.Println(err)
+	}
+	if json_str.Status != "ok" {
+		fmt.Println("奇安信返回验证数据错误返回错误json，请检查参数")
+		fmt.Println("奇安信返回的JSON ：", string(body))
+		return
+	}
+	visit:=json_str.Res.Basedata.Visit//总请求数
+    pv := json_str.Res.Basedata.Pv //页面访问量
+    uv := json_str.Res.Basedata.Uv  //独立访客数
+    ip := json_str.Res.Basedata.IP //独立访问ip数
+
+    cachehit := json_str.Res.Basedata.Cachehit  //加速次数
+    resource_visit := json_str.Res.Basedata.ResourceVisit  //回源次数
+
+    cacheband := json_str.Res.Basedata.Cacheband  //加速流量
+    to_back_flow := json_str.Res.Basedata.ToBackFlow  //回源流量
+    totalband := json_str.Res.Basedata.Totalband  //总流量
+	fmt.Println( "\n网站访问报告: ",
+	        host + "." + domain,
+	        "\n总请求量",
+	        visit,
+	        "\n页面访问量",
+	        pv,
+	        "\n独立访问量",
+	        uv,
+	        "\n独立ip量",
+	        ip,
+	        "\n加速次数",
+	        cachehit,
+	        "\n回源次数",
+	        resource_visit,
+	        "\n加速流量",
+	        convertBytes(cacheband),
+	        "\n回源流量",
+	        convertBytes(to_back_flow),
+	        "\n总流量",
+	        convertBytes(totalband))
+}
+	
+
+
+// // 获取网站安全报表
+// func get_safebase_data(domain, host){
+// 	if_phpsessid()
+// 	post := http.Client{}
+//     url = "https://wangzhan.qianxin.com/report/get_safebase_data"
+//     data = "domain=" + domain + "&host=" + host
+// 	http, _ := http.NewRequest("POST", url, strings.NewReader(data))
+// 	http.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+// 	http.Header.Set("Cookie", "PHPSESSID="+phpsessid)
+// 	res, err := post.Do(http)
+// 	if err != nil {
+// 		fmt.Println("http错误:", err)
+// 		return
+// 	}
+// 	defer res.Body.Close()
+// 	body, _ := (io.ReadAll(res.Body))
+// 	html := string(body)
+
+//     json_data = requests.post(url, data=data, headers=headers)
+//     json_str = json.loads(json_data.text)
+//     visit = json_str["res"]["visit"]  //正常访问数
+//     webcount = json_str["res"]["webcount"]  //web攻击数
+//     cccount = json_str["res"]["cccount"]  //cc攻击数
+//     days = json_str["res"]["days"]  //已防护天数
+//     totalcount = json_str["res"]["totalcount"]  //恶意攻击数
+
+//     print(
+//         "\n网站安全报告: ",
+//         host + "." + domain,
+//         "\n已防护天数",
+//         days,
+//         "\n正常访问数",
+//         visit,
+//         "\nweb攻击数",
+//         webcount,
+//         "\ncc攻击数",
+//         cccount,
+//         "\n恶意攻击数",
+//         totalcount,
+//     )
+// }
+    
+
 
 // 获取当前时间戳
 func time_new() int64 {
@@ -145,10 +304,9 @@ func up_crt(host_str string, domain_str string) {
 		return
 	}
 
-	// 打开并读取文件2的内容
+	// 打开并读取文件的内容
 	file2, err := os.Open("privkey.pem")
 	if err != nil {
-		fmt.Println("打开文件key错误:", err)
 		return
 	}
 	_, err = io.Copy(key, file2)
@@ -326,7 +484,7 @@ func login360() {
 
 }
 
-// 获取域名列表
+//获取域名列表
 // func getDomainList() {
 // 	if_phpsessid()
 // 	cli := &http.Client{}
