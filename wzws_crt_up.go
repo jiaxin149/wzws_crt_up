@@ -166,7 +166,7 @@ func run(){
 }
 //推送
 // func push()  {
-// 	token:="99058c58aca24958875fab762f8ef20a"
+// 	token:=""
 // 	url := "http://www.pushplus.plus/send?token="+token+"&content="+url.PathEscape(push_text)
 // 	resp, err := http.Get(url)
 // 	if err != nil {
